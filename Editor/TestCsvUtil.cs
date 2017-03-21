@@ -203,6 +203,29 @@ Hello there,123,300.2,Blue
 			}
 		}
 
+		public struct TestStruct {
+			public float f;
+			public string s;
+		}
+
+		[Test]
+		public void TestLoadStruct() {
+			string csvData = @"s, Hello World  ,This is an ignored description,also ignored
+			f,1234.5,Comment here";
+
+			TestStruct t = new TestStruct();
+
+			using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(csvData))) {
+				using (var sr = new StreamReader(ms)) {
+					CsvUtil.LoadObject(sr, ref t);
+				}
+			}
+
+			Assert.AreEqual(" Hello World  ", t.s);
+			Assert.That(t.f, Is.InRange(1234.4999f, 1234.5001f)); // float imprecision
+
+		}
+
 
 	}
 }

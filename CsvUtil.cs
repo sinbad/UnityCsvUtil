@@ -42,10 +42,17 @@ namespace Sinbad {
             var ret = new List<T>();
             string header = rdr.ReadLine();
             var fieldDefs = ParseHeader(header);
+            FieldInfo[] fi = typeof(T).GetFields();
+            bool isValueType = typeof(T).IsValueType;
             while (!rdr.EndOfStream) {
                 string line = rdr.ReadLine();
                 var obj = new T();
-                if (ParseLineToObject(line, fieldDefs, obj)) {
+                // box manually to avoid issues with structs
+                object boxed = obj;
+                if (ParseLineToObject(line, fieldDefs, fi, boxed)) {
+                    // unbox value types
+                    if (isValueType)
+                        obj = (T)boxed;
                     ret.Add(obj);
                 }
             }
@@ -60,10 +67,10 @@ namespace Sinbad {
         // then it will be ignored (as will any lines that start that way)
         // This method throws file exceptions if file is not found
         // Field names are matched case-insensitive for convenience
-        public static void LoadObject<T>(string filename, T destObject) {
+        public static void LoadObject<T>(string filename, ref T destObject) {
             using (var stream = File.Open(filename, FileMode.Open)) {
                 using (var rdr = new StreamReader(stream)) {
-                    LoadObject<T>(rdr, destObject);
+                    LoadObject<T>(rdr, ref destObject);
                 }
             }
         }
@@ -73,8 +80,10 @@ namespace Sinbad {
         // First column is property name, second is value
         // You can optionally include other columns for descriptions etc, these are ignored
         // Field names are matched case-insensitive for convenience
-        public static void LoadObject<T>(StreamReader rdr, T destObject) {
+        public static void LoadObject<T>(StreamReader rdr, ref T destObject) {
             FieldInfo[] fi = typeof(T).GetFields();
+            // prevent auto-boxing causing problems with structs
+            object nonValueObject = destObject;
             while(!rdr.EndOfStream) {
                 string line = rdr.ReadLine();
                 // Ignore optional header lines
@@ -83,10 +92,14 @@ namespace Sinbad {
 
                 string[] vals = EnumerateCsvLine(line).ToArray();
                 if (vals.Length >= 2) {
-                    SetField(vals[0].Trim(), vals[1], fi, destObject);
+                    SetField(vals[0].Trim(), vals[1], fi, nonValueObject);
                 } else {
                     Debug.LogWarning(string.Format("CsvUtil: ignoring line '{0}': not enough fields", line));
                 }
+            }
+            if (typeof(T).IsValueType) {
+                // unbox
+                destObject = (T)nonValueObject;
             }
         }
 
@@ -205,11 +218,10 @@ namespace Sinbad {
         }
 
         // Parse an object line based on the header, return true if any fields matched
-        private static bool ParseLineToObject<T>(string line, Dictionary<string, int> fieldDefs, T destObject) {
+        private static bool ParseLineToObject(string line, Dictionary<string, int> fieldDefs, FieldInfo[] fi, object destObject) {
 
             string[] values = EnumerateCsvLine(line).ToArray();
             bool setAny = false;
-            FieldInfo[] fi = typeof(T).GetFields();
             foreach(string field in fieldDefs.Keys) {
                 int index = fieldDefs[field];
                 if (index < values.Length) {
@@ -222,13 +234,14 @@ namespace Sinbad {
             return setAny;
         }
 
-        private static bool SetField<T>(string fieldName, string val, FieldInfo[] fi, T destObject) {
+        private static bool SetField(string fieldName, string val, FieldInfo[] fi, object destObject) {
             foreach(FieldInfo f in fi) {
                 // Case insensitive comparison
                 if (string.Compare(fieldName, f.Name, true) == 0) {
                     // Might need to parse the string into the field type
                     object typedVal = f.FieldType == typeof(string) ? val : ParseString(val, f.FieldType);
                     f.SetValue(destObject, typedVal);
+                    UberDebug.Log("Tried to set {0} to {1}, is {2}", f.Name, typedVal, f.GetValue(destObject));
                     return true;
                 }
             }
