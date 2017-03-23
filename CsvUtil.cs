@@ -241,7 +241,6 @@ namespace Sinbad {
                     // Might need to parse the string into the field type
                     object typedVal = f.FieldType == typeof(string) ? val : ParseString(val, f.FieldType);
                     f.SetValue(destObject, typedVal);
-                    UberDebug.Log("Tried to set {0} to {1}, is {2}", f.Name, typedVal, f.GetValue(destObject));
                     return true;
                 }
             }
