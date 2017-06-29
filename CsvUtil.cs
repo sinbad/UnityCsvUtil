@@ -154,7 +154,7 @@ namespace Sinbad {
         // Writes a header line with field names, followed by one line per
         // object with each field value in each column
         // This method throws exceptions if unable to write
-        public static void SaveObjects<T>(IEnumerable<T> objs, StreamWriter w) {
+        public static void SaveObjects<T>(IEnumerable<T> objs, TextWriter w) {
             FieldInfo[] fi = typeof(T).GetFields();
             WriteHeader<T>(fi, w);
 
@@ -185,7 +185,7 @@ namespace Sinbad {
             w.Write(Environment.NewLine);
         }
 
-        private static void WriteObjectToLine<T>(T obj, FieldInfo[] fi, StreamWriter w) {
+        private static void WriteObjectToLine<T>(T obj, FieldInfo[] fi, TextWriter w) {
             bool firstCol = true;
             foreach (FieldInfo f in fi) {
                 // Good CSV files don't have a trailing comma so only add here
