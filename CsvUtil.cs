@@ -38,14 +38,14 @@ namespace Sinbad {
         // Can optionally include any other columns headed with #foo, which are ignored
         // E.g. you can include a #Description column to provide notes which are ignored
         // Field names are matched case-insensitive for convenience
-        public static List<T> LoadObjects<T>(StreamReader rdr) where T: new()  {
+        public static List<T> LoadObjects<T>(TextReader rdr) where T: new()  {
             var ret = new List<T>();
             string header = rdr.ReadLine();
             var fieldDefs = ParseHeader(header);
             FieldInfo[] fi = typeof(T).GetFields();
             bool isValueType = typeof(T).IsValueType;
-            while (!rdr.EndOfStream) {
-                string line = rdr.ReadLine();
+            string line;
+            while((line = rdr.ReadLine()) != null) {
                 var obj = new T();
                 // box manually to avoid issues with structs
                 object boxed = obj;
@@ -80,12 +80,12 @@ namespace Sinbad {
         // First column is property name, second is value
         // You can optionally include other columns for descriptions etc, these are ignored
         // Field names are matched case-insensitive for convenience
-        public static void LoadObject<T>(StreamReader rdr, ref T destObject) {
+        public static void LoadObject<T>(TextReader rdr, ref T destObject) {
             FieldInfo[] fi = typeof(T).GetFields();
             // prevent auto-boxing causing problems with structs
             object nonValueObject = destObject;
-            while(!rdr.EndOfStream) {
-                string line = rdr.ReadLine();
+            string line;
+            while((line = rdr.ReadLine()) != null) {
                 // Ignore optional header lines
                 if (line.StartsWith("#"))
                     continue;
@@ -117,7 +117,7 @@ namespace Sinbad {
         // Save a single object to a CSV stream
         // Will write 1 line per field, first column is name, second is value
         // This method throws exceptions if unable to write
-        public static void SaveObject<T>(T obj, StreamWriter w) {
+        public static void SaveObject<T>(T obj, TextWriter w) {
             FieldInfo[] fi = typeof(T).GetFields();
             bool firstLine = true;
             foreach (FieldInfo f in fi) {
@@ -171,7 +171,7 @@ namespace Sinbad {
             }
         }
 
-        private static void WriteHeader<T>(FieldInfo[] fi, StreamWriter w) {
+        private static void WriteHeader<T>(FieldInfo[] fi, TextWriter w) {
             bool firstCol = true;
             foreach (FieldInfo f in fi) {
                 // Good CSV files don't have a trailing comma so only add here
