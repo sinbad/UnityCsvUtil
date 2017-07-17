@@ -25,10 +25,13 @@ namespace Sinbad {
         // E.g. you can include a #Description column to provide notes which are ignored
         // This method throws file exceptions if file is not found
         // Field names are matched case-insensitive for convenience
-        public static List<T> LoadObjects<T>(string filename) where T: new()  {
+        // @param filename File to load
+        // @param strict If true, log errors if a line doesn't have enough
+        //   fields as per the header. If false, ignores and just fills what it can
+        public static List<T> LoadObjects<T>(string filename, bool strict = true) where T: new()  {
             using (var stream = File.Open(filename, FileMode.Open)) {
                 using (var rdr = new StreamReader(stream)) {
-                    return LoadObjects<T>(rdr);
+                    return LoadObjects<T>(rdr, strict);
                 }
             }
         }
@@ -38,7 +41,10 @@ namespace Sinbad {
         // Can optionally include any other columns headed with #foo, which are ignored
         // E.g. you can include a #Description column to provide notes which are ignored
         // Field names are matched case-insensitive for convenience
-        public static List<T> LoadObjects<T>(TextReader rdr) where T: new()  {
+        // @param rdr Input reader
+        // @param strict If true, log errors if a line doesn't have enough
+        //   fields as per the header. If false, ignores and just fills what it can
+        public static List<T> LoadObjects<T>(TextReader rdr, bool strict = true) where T: new()  {
             var ret = new List<T>();
             string header = rdr.ReadLine();
             var fieldDefs = ParseHeader(header);
@@ -49,7 +55,7 @@ namespace Sinbad {
                 var obj = new T();
                 // box manually to avoid issues with structs
                 object boxed = obj;
-                if (ParseLineToObject(line, fieldDefs, fi, boxed)) {
+                if (ParseLineToObject(line, fieldDefs, fi, boxed, strict)) {
                     // unbox value types
                     if (isValueType)
                         obj = (T)boxed;
@@ -218,7 +224,7 @@ namespace Sinbad {
         }
 
         // Parse an object line based on the header, return true if any fields matched
-        private static bool ParseLineToObject(string line, Dictionary<string, int> fieldDefs, FieldInfo[] fi, object destObject) {
+        private static bool ParseLineToObject(string line, Dictionary<string, int> fieldDefs, FieldInfo[] fi, object destObject, bool strict) {
 
             string[] values = EnumerateCsvLine(line).ToArray();
             bool setAny = false;
@@ -227,7 +233,7 @@ namespace Sinbad {
                 if (index < values.Length) {
                     string val = values[index];
                     setAny = SetField(field, val, fi, destObject) || setAny;
-                } else {
+                } else if (strict) {
                     Debug.LogWarning(string.Format("CsvUtil: error parsing line '{0}': not enough fields", line));
                 }
             }
