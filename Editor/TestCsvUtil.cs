@@ -43,7 +43,7 @@ namespace Sinbad {
 
 			using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(csvData))) {
 				using (var sr = new StreamReader(ms)) {
-					CsvUtil.LoadObject(sr, t);
+					CsvUtil.LoadObject(sr, ref t);
 				}
 			}
 
@@ -66,7 +66,7 @@ namespace Sinbad {
 
 			using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(csvData))) {
 				using (var sr = new StreamReader(ms)) {
-					CsvUtil.LoadObject(sr, t);
+					CsvUtil.LoadObject(sr, ref t);
 				}
 			}
 
@@ -90,7 +90,7 @@ namespace Sinbad {
 
 			using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(csvData))) {
 				using (var sr = new StreamReader(ms)) {
-					CsvUtil.LoadObject(sr, t);
+					CsvUtil.LoadObject(sr, ref t);
 				}
 			}
 
