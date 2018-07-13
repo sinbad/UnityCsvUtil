@@ -28,8 +28,61 @@ namespace Sinbad {
 			}
 		}
 
+        public class TestPropertiesObject {
+			public string StringProperty { get; private set; }
+			public int IntProperty { get; private set; }
+            public float FloatProperty { get; private set; }
+            public enum Colour {
+                Red = 1,
+                Green = 2,
+                Blue = 3,
+                Purple = 15
+            }
+            public Colour EnumProperty { get; private set; }
 
-		[Test]
+            public TestPropertiesObject() {}
+			public TestPropertiesObject(string s, int i, float f, Colour c) {
+				StringProperty = s;
+				IntProperty = i;
+				FloatProperty = f;
+                EnumProperty = c;
+            }
+		}
+
+        public class TestPropertiesAndFieldsObject {
+            public string StringMember { get; protected set; }
+            private string stringMember;
+            public string GetStringField() { return stringMember; }
+
+            public int IntMember { get; set; }
+            protected int intMember;
+            public int GetIntField() { return intMember; }
+
+            public float FloatMember { get; private set; }
+            public float floatMember;
+            public float GetFloatField() { return floatMember; }
+
+            public enum Colour {
+                Red = 1,
+                Green = 2,
+                Blue = 3,
+                Purple = 15
+            }
+            public Colour EnumMember { get; private set; }
+            private Colour enumMember;
+            public Colour GetEnumField() { return enumMember; }
+
+            public TestPropertiesAndFieldsObject() { }
+            public TestPropertiesAndFieldsObject(string s, int i, float f, Colour c) {
+                StringMember = stringMember = s;
+                IntMember = intMember = i;
+                FloatMember = floatMember = f;
+                EnumMember = enumMember = c;
+            }
+        }
+
+
+        [Test]
 		public void TestLoadSingle() {
 			// It's ok to have newline with padding at start, should trim field names (not values)
 			// Include spaces in string field value to prove all content preserved
@@ -136,7 +189,57 @@ Zaphod Beeblebrox,3.1,""Amazingly amazing"",000359,Green";
 
 		}
 
-		[Test]
+        [Test]
+        public void TestLoadProperties()  {
+            // It's ok to have newline with padding at start, should trim field names (not values)
+            // Include spaces in string field value to prove all content preserved
+            string csvData = @"StringProperty, Hello World  ,This is an ignored description,also ignored
+			EnumProperty,Blue,Something Something
+			IntProperty,1234,Comment here
+			FloatProperty,1.5,More commenting";
+
+            TestPropertiesObject t = new TestPropertiesObject();
+
+            using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(csvData))) {
+                using (var sr = new StreamReader(ms)) {
+                    CsvUtil.LoadObject(sr, ref t);
+                }
+            }
+
+            Assert.AreEqual(" Hello World  ", t.StringProperty);
+            Assert.AreEqual(1234, t.IntProperty);
+            Assert.That(t.FloatProperty, Is.InRange(1.4999f, 1.5001f)); // float imprecision
+            Assert.AreEqual(TestPropertiesObject.Colour.Blue, t.EnumProperty);
+        }
+
+        [Test]
+        public void TestLoadPropertiesAndFieldsSameName() {
+            // It's ok to have newline with padding at start, should trim field names (not values)
+            // Include spaces in string field value to prove all content preserved
+            string csvData = @"StringMember, Hello World  ,This is an ignored description,also ignored
+			EnumMember,Blue,Something Something
+			IntMember,1234,Comment here
+			FloatMember,1.5,More commenting";
+
+            TestPropertiesAndFieldsObject t = new TestPropertiesAndFieldsObject();
+
+            using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(csvData))) {
+                using (var sr = new StreamReader(ms)) {
+                    CsvUtil.LoadObject(sr, ref t);
+                }
+            }
+
+            Assert.AreEqual(" Hello World  ", t.StringMember);
+            Assert.AreEqual(" Hello World  ", t.GetStringField());
+            Assert.AreEqual(1234, t.IntMember);
+            Assert.AreEqual(1234, t.GetIntField());
+            Assert.That(t.FloatMember, Is.InRange(1.4999f, 1.5001f)); // float imprecision
+            Assert.That(t.GetFloatField(), Is.InRange(1.4999f, 1.5001f)); // float imprecision
+            Assert.AreEqual(TestPropertiesAndFieldsObject.Colour.Blue, t.EnumMember);
+            Assert.AreEqual(TestPropertiesAndFieldsObject.Colour.Blue, t.GetEnumField());
+        }
+
+        [Test]
 		public void TestSaveSingle() {
 
 			var obj = new TestObject("Hello there", 123, 300.2f, TestObject.Colour.Blue);

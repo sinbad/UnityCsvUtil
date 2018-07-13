@@ -48,14 +48,15 @@ namespace Sinbad {
             var ret = new List<T>();
             string header = rdr.ReadLine();
             var fieldDefs = ParseHeader(header);
-            FieldInfo[] fi = typeof(T).GetFields();
+            FieldInfo[] fi = typeof(T).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            PropertyInfo[] pi = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             bool isValueType = typeof(T).IsValueType;
             string line;
             while((line = rdr.ReadLine()) != null) {
                 var obj = new T();
                 // box manually to avoid issues with structs
                 object boxed = obj;
-                if (ParseLineToObject(line, fieldDefs, fi, boxed, strict)) {
+                if (ParseLineToObject(line, fieldDefs, fi, pi, boxed, strict)) {
                     // unbox value types
                     if (isValueType)
                         obj = (T)boxed;
@@ -87,7 +88,8 @@ namespace Sinbad {
         // You can optionally include other columns for descriptions etc, these are ignored
         // Field names are matched case-insensitive for convenience
         public static void LoadObject<T>(TextReader rdr, ref T destObject) {
-            FieldInfo[] fi = typeof(T).GetFields();
+            FieldInfo[] fi = typeof(T).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            PropertyInfo[] pi = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             // prevent auto-boxing causing problems with structs
             object nonValueObject = destObject;
             string line;
@@ -98,7 +100,7 @@ namespace Sinbad {
 
                 string[] vals = EnumerateCsvLine(line).ToArray();
                 if (vals.Length >= 2) {
-                    SetField(vals[0].Trim(), vals[1], fi, nonValueObject);
+                    SetField(vals[0].Trim(), vals[1], fi, pi, nonValueObject);
                 } else {
                     Debug.LogWarning(string.Format("CsvUtil: ignoring line '{0}': not enough fields", line));
                 }
@@ -224,7 +226,7 @@ namespace Sinbad {
         }
 
         // Parse an object line based on the header, return true if any fields matched
-        private static bool ParseLineToObject(string line, Dictionary<string, int> fieldDefs, FieldInfo[] fi, object destObject, bool strict) {
+        private static bool ParseLineToObject(string line, Dictionary<string, int> fieldDefs, FieldInfo[] fi, PropertyInfo[] pi, object destObject, bool strict) {
 
             string[] values = EnumerateCsvLine(line).ToArray();
             bool setAny = false;
@@ -232,7 +234,7 @@ namespace Sinbad {
                 int index = fieldDefs[field];
                 if (index < values.Length) {
                     string val = values[index];
-                    setAny = SetField(field, val, fi, destObject) || setAny;
+                    setAny = SetField(field, val, fi, pi, destObject) || setAny;
                 } else if (strict) {
                     Debug.LogWarning(string.Format("CsvUtil: error parsing line '{0}': not enough fields", line));
                 }
@@ -240,17 +242,29 @@ namespace Sinbad {
             return setAny;
         }
 
-        private static bool SetField(string fieldName, string val, FieldInfo[] fi, object destObject) {
+        private static bool SetField(string fieldName, string val, FieldInfo[] fi, PropertyInfo[] pi, object destObject) {
+            bool result = false;
+            foreach (PropertyInfo p in pi) {
+                // Case insensitive comparison
+                if (string.Compare(fieldName, p.Name, true) == 0) {
+                    // Might need to parse the string into the property type
+                    object typedVal = p.PropertyType == typeof(string) ? val : ParseString(val, p.PropertyType);
+                    p.SetValue(destObject, typedVal, null);
+                    result = true;
+                    break;
+                }
+            }
             foreach(FieldInfo f in fi) {
                 // Case insensitive comparison
                 if (string.Compare(fieldName, f.Name, true) == 0) {
                     // Might need to parse the string into the field type
                     object typedVal = f.FieldType == typeof(string) ? val : ParseString(val, f.FieldType);
                     f.SetValue(destObject, typedVal);
-                    return true;
+                    result = true;
+                    break;
                 }
             }
-            return false;
+            return result;
         }
 
         private static object ParseString(string strValue, Type t) {
