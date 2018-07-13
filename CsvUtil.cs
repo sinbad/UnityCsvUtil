@@ -100,7 +100,7 @@ namespace Sinbad {
 
                 string[] vals = EnumerateCsvLine(line).ToArray();
                 if (vals.Length >= 2) {
-                    SetField(vals[0].Trim(), vals[1], fi, pi, nonValueObject);
+                    SetField(RemoveSpaces(vals[0].Trim()), vals[1], fi, pi, nonValueObject);
                 } else {
                     Debug.LogWarning(string.Format("CsvUtil: ignoring line '{0}': not enough fields", line));
                 }
@@ -218,8 +218,10 @@ namespace Sinbad {
             int n = 0;
             foreach(string field in EnumerateCsvLine(header)) {
                 var trimmed = field.Trim();
-                if (!trimmed.StartsWith("#"))
+                if (!trimmed.StartsWith("#")) {
+                    trimmed = RemoveSpaces(trimmed);
                     headers[trimmed] = n;
+                }
                 ++n;
             }
             return headers;
@@ -281,5 +283,8 @@ namespace Sinbad {
             }
         }
 
+        private static string RemoveSpaces(string strValue) {
+            return Regex.Replace(strValue, @"\s", string.Empty);
+        }
     }
 }

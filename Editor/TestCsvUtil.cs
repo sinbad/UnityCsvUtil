@@ -153,7 +153,30 @@ namespace Sinbad {
 			Assert.AreEqual(TestObject.Colour.Purple, t.EnumField);
 		}
 
-		[Test]
+        [Test]
+        public void TestLoadSingleWithSpacesInHeader() {
+            // It's ok to have newline with padding at start, should trim field names (not values)
+            // Include spaces in string field value to prove all content preserved
+            string csvData = @"StringProperty, Hello World  ,This is an ignored description,also ignored
+			  Enum Property,Blue,Something Something
+			 Int  Property  ,1234,Comment here
+			FloatProperty  ,1.5,More commenting";
+
+            TestPropertiesObject t = new TestPropertiesObject();
+
+            using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(csvData))) {
+                using (var sr = new StreamReader(ms)) {
+                    CsvUtil.LoadObject(sr, ref t);
+                }
+            }
+
+            Assert.AreEqual(" Hello World  ", t.StringProperty);
+            Assert.AreEqual(1234, t.IntProperty);
+            Assert.That(t.FloatProperty, Is.InRange(1.4999f, 1.5001f)); // float imprecision
+            Assert.AreEqual(TestPropertiesObject.Colour.Blue, t.EnumProperty);
+        }
+
+        [Test]
 		public void TestLoadMulti() {
 			// Header first, then N values
 			// #Field headers are ignored
@@ -188,6 +211,42 @@ Zaphod Beeblebrox,3.1,""Amazingly amazing"",000359,Green";
 			Assert.AreEqual(TestObject.Colour.Green, t.EnumField);
 
 		}
+
+        [Test]
+        public void TestLoadMultiWithSpacesInHeader()
+        {
+            // Header first, then N values
+            // #Field headers are ignored
+            // This time we don't want any prefixing since not trimmed
+            string csvData = @"String Field, FloatField ,#Description, Int  Field ,   EnumField
+""This,has,commas,in it"",2.34,Something ignored,35,Red
+Hello World,256.25,""Notes here"",10003,Purple
+Zaphod Beeblebrox,3.1,""Amazingly amazing"",000359,Green";
+
+            List<TestObject> objs;
+            using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(csvData))) {
+                using (var sr = new StreamReader(ms)) {
+                    objs = CsvUtil.LoadObjects<TestObject>(sr);
+                }
+            }
+
+            Assert.That(objs, Has.Count.EqualTo(3));
+            TestObject t = objs[0];
+            Assert.AreEqual("This,has,commas,in it", t.StringField);
+            Assert.AreEqual(35, t.IntField);
+            Assert.That(t.FloatField, Is.InRange(2.33999f, 2.340001f)); // float imprecision
+            Assert.AreEqual(TestObject.Colour.Red, t.EnumField);
+            t = objs[1];
+            Assert.AreEqual("Hello World", t.StringField);
+            Assert.AreEqual(10003, t.IntField);
+            Assert.That(t.FloatField, Is.InRange(256.24999f, 256.25001f)); // float imprecision
+            Assert.AreEqual(TestObject.Colour.Purple, t.EnumField);
+            t = objs[2];
+            Assert.AreEqual("Zaphod Beeblebrox", t.StringField);
+            Assert.AreEqual(359, t.IntField);
+            Assert.That(t.FloatField, Is.InRange(3.09999f, 3.10001f)); // float imprecision
+            Assert.AreEqual(TestObject.Colour.Green, t.EnumField);
+        }
 
         [Test]
         public void TestLoadProperties()  {
