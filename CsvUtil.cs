@@ -29,7 +29,7 @@ namespace Sinbad {
         // @param strict If true, log errors if a line doesn't have enough
         //   fields as per the header. If false, ignores and just fills what it can
         public static List<T> LoadObjects<T>(string filename, bool strict = true) where T: new()  {
-            using (var stream = File.Open(filename, FileMode.Open)) {
+            using (var stream = File.OpenRead(filename)) {
                 using (var rdr = new StreamReader(stream)) {
                     return LoadObjects<T>(rdr, strict);
                 }
