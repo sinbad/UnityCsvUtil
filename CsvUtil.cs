@@ -16,7 +16,7 @@ namespace Sinbad {
     public static class CsvUtil {
 
         // Quote semicolons too since some apps e.g. Numbers don't like them
-        static char[] quotedChars = new char[] { ',', ';'};
+        static char[] quotedChars = new char[] { ',', ';', '\n'};
 
 
         // Load a CSV into a list of struct/classes from a file where each line = 1 object
