@@ -1,5 +1,7 @@
 # Unity simple CSV/object serialiser
 
+> #### Note: I have stopped using Unity and so am not maintaining this library any more.
+
 ## Purpose
 
 I find it useful to be able to expose game parameters and other tweakables via
