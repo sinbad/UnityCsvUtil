@@ -116,7 +116,7 @@ namespace Sinbad {
         // This method throws exceptions if unable to write
         public static void SaveObject<T>(T obj, string filename) {
             using (var stream = File.Open(filename, FileMode.Create)) {
-                using (var wtr = new StreamWriter(stream)) {
+                using (var wtr = new StreamWriter(stream, System.Text.Encoding.UTF8)) {
                     SaveObject<T>(obj, wtr);
                 }
             }
@@ -152,7 +152,7 @@ namespace Sinbad {
         // This method throws exceptions if unable to write
         public static void SaveObjects<T>(IEnumerable<T> objs, string filename) {
             using (var stream = File.Open(filename, FileMode.Create)) {
-                using (var wtr = new StreamWriter(stream)) {
+                using (var wtr = new StreamWriter(stream, System.Text.Encoding.UTF8)) {
                     SaveObjects<T>(objs, wtr);
                 }
             }
