@@ -388,6 +388,34 @@ Hello there,123,300.2,Blue
 
 		}
 
+		
+		public class TestAutoImplementedClass
+		{
+			public ulong Id { get; }
+			public string Name { get; }
 
+			public TestAutoImplementedClass(ulong id, string name)
+			{
+				Id = id;
+				Name = name;
+			}
+		}
+
+		[Test]
+		public void TestLoadAutoImplementedPropertiesClass() {
+			//
+			var csvData = @"Id, Name
+1,a
+2,b";
+			List<TestAutoImplementedClass> objs;
+			using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(csvData))) {
+				using (var sr = new StreamReader(ms)) {
+					objs = CsvUtil.LoadObjectsWithConstructor<TestAutoImplementedClass>(sr);
+				}
+			}
+			Assert.AreEqual(1, objs[0].Id);
+			Assert.AreEqual("a",objs[0].Name);
+		}
 	}
 }
+
